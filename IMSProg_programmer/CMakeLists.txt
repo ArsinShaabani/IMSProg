@@ -259,6 +259,52 @@ install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/img/IMSProg64.png" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/pixmaps")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/database/IMSProg.Dat" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/imsprog")
 
+# ---- Windows-only deployment block (added) ----
+if(WIN32)
+    set(OUT_DIR "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+    set(RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/img")
+    set(DB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/database")
+    set(LANG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/language")
+
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${OUT_DIR}/img
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${OUT_DIR}/database
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${OUT_DIR}/language
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${RES_DIR}/IMSProg.png ${OUT_DIR}/img/
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${RES_DIR}/IMSProgEditor.png ${OUT_DIR}/img/
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${DB_DIR}/IMSProg.Dat ${OUT_DIR}/database/
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${DB_DIR}/IMSProgEditor.Dat ${OUT_DIR}/database/
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${DB_DIR}/IMSProgMMC.Dat ${OUT_DIR}/database/
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${LANG_DIR}/imsprog_en.qm ${OUT_DIR}/language/
+    )
+
+    if(NOT DEFINED QT_HOST_BIN)
+        set(QT_HOST_BIN "$<TARGET_FILE_DIR:Qt${QT_VERSION_MAJOR}::Core>/../..")
+        # $<TARGET_FILE_DIR:Qt6::Core> points to the Qt bin folder itself
+        set(QT_HOST_BIN "$<TARGET_FILE_DIR:Qt${QT_VERSION_MAJOR}::Core>")
+    endif()
+
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo "Deploying Qt runtime with windeployqt..."
+        COMMAND "$<TARGET_FILE_DIR:Qt${QT_VERSION_MAJOR}::Core>/windeployqt.exe"
+            --no-translations --no-system-d3d-compiler --no-opengl-sw
+            --compiler-runtime
+            --dir ${OUT_DIR}/deploy
+            $<TARGET_FILE:${PROJECT_NAME}>
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${OUT_DIR}/deploy ${OUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${OUT_DIR}/deploy
+        COMMENT "Copying resources and deploying Qt runtime"
+    )
+endif()
+
+
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/other/IMSProg.desktop" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
 endif()
