@@ -107,6 +107,7 @@ set(TS_FILES
     language/chipUpdater_hu_HU.ts
     language/chipUpdater_pt_BR.ts
     language/chipUpdater_it_IT.ts
+    language/chipUpdater_fa_IR.ts
 )
 
 if (QT_VERSION_MAJOR EQUAL 5)

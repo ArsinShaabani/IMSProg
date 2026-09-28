@@ -10,8 +10,31 @@ set(CMAKE_AUTOUIC ON)
 project(IMSProg LANGUAGES C CXX)
 
 include(FindPkgConfig)
-pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
-pkg_check_modules(LIBFTDI REQUIRED IMPORTED_TARGET libftdi1)
+
+if(WIN32)
+    # --- Windows: use vendored third_party libraries (no pkg-config needed) ---
+    set(IMSPROG_THIRDPARTY "${CMAKE_CURRENT_SOURCE_DIR}/../third_party")
+    set(LIBUSB_WIN_ROOT "${IMSPROG_THIRDPARTY}/libusb")
+    set(LIBFTDI_WIN_ROOT "${IMSPROG_THIRDPARTY}/libftdi-install")
+
+    add_library(PkgConfig::LIBUSB UNKNOWN IMPORTED)
+    set_target_properties(PkgConfig::LIBUSB PROPERTIES
+        IMPORTED_LOCATION "${LIBUSB_WIN_ROOT}/VS2022/MS64/dll/libusb-1.0.lib"
+        INTERFACE_INCLUDE_DIRECTORIES "${LIBUSB_WIN_ROOT}/include"
+    )
+
+    add_library(PkgConfig::LIBFTDI UNKNOWN IMPORTED)
+    set_target_properties(PkgConfig::LIBFTDI PROPERTIES
+        IMPORTED_LOCATION "${LIBFTDI_WIN_ROOT}/lib/ftdi1.lib"
+        INTERFACE_INCLUDE_DIRECTORIES "${LIBFTDI_WIN_ROOT}/include/libftdi1"
+    )
+
+    # MSVC compat shims (unistd.h etc.)
+    include_directories("${IMSPROG_THIRDPARTY}/compat")
+else()
+    pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
+    pkg_check_modules(LIBFTDI REQUIRED IMPORTED_TARGET libftdi1)
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(CMAKE_INSTALL_DO_STRIP FALSE)
@@ -143,6 +166,7 @@ set(TS_FILES
     language/chipProgrammer_hu_HU.ts
     language/chipProgrammer_pt_BR.ts
     language/chipProgrammer_it_IT.ts
+    language/chipProgrammer_fa_IR.ts
 )
 
 if (QT_VERSION_MAJOR EQUAL 5)
@@ -270,18 +294,39 @@ if(WIN32)
         COMMAND ${CMAKE_COMMAND} -E make_directory ${OUT_DIR}/img
         COMMAND ${CMAKE_COMMAND} -E make_directory ${OUT_DIR}/database
         COMMAND ${CMAKE_COMMAND} -E make_directory ${OUT_DIR}/language
+    )
+
+    # Copy resources/databases that exist in the source tree (guarded:
+    # IMSProgEditor.png / IMSProgEditor.Dat / IMSProgMMC.Dat may be absent)
+    foreach(_res_file
+            ${RES_DIR}/IMSProg.png
+            ${RES_DIR}/IMSProgEditor.png
+            ${DB_DIR}/IMSProg.Dat
+            ${DB_DIR}/IMSProgEditor.Dat
+            ${DB_DIR}/IMSProgMMC.Dat)
+        if(EXISTS "${_res_file}")
+            if(_res_file MATCHES "database[/\\\\][^/\\\\]+$")
+                set(_res_dest ${OUT_DIR}/database)
+            else()
+                set(_res_dest ${OUT_DIR}/img)
+            endif()
+            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_res_file}" ${_res_dest})
+        endif()
+    endforeach()
+
+    # Copy generated translation (.qm) files
+    foreach(_qm ${QM_FILES})
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_qm}" ${OUT_DIR}/language/)
+    endforeach()
+
+    # Copy vendored runtime DLLs (libusb / libftdi)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${RES_DIR}/IMSProg.png ${OUT_DIR}/img/
+            "${LIBUSB_WIN_ROOT}/VS2022/MS64/dll/libusb-1.0.dll" ${OUT_DIR}
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${RES_DIR}/IMSProgEditor.png ${OUT_DIR}/img/
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${DB_DIR}/IMSProg.Dat ${OUT_DIR}/database/
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${DB_DIR}/IMSProgEditor.Dat ${OUT_DIR}/database/
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${DB_DIR}/IMSProgMMC.Dat ${OUT_DIR}/database/
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${LANG_DIR}/imsprog_en.qm ${OUT_DIR}/language/
+            "${LIBFTDI_WIN_ROOT}/bin/ftdi1.dll" ${OUT_DIR}
     )
 
     if(NOT DEFINED QT_HOST_BIN)

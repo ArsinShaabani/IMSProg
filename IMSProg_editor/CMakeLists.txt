@@ -104,6 +104,7 @@ set(TS_FILES
     language/chipEditor_hu_HU.ts
     language/chipEditor_pt_BR.ts
     language/chipEditor_it_IT.ts
+    language/chipEditor_fa_IR.ts
 )
 
 if (QT_VERSION_MAJOR EQUAL 5)
