@@ -40,7 +40,7 @@ int ch347_spi_write_packet(struct ch347_priv *priv, uint8_t cmd, const void *tx,
     }
     if (cur_len < len) {
         /* This discards the const qualifier. However, libusb won't be writing to it. */
-        ptr = (uint8_t *) (tx + cur_len);
+        ptr = (uint8_t *)tx + cur_len;
         err = libusb_bulk_transfer(priv->handle, CH347_EPOUT, ptr, len - cur_len, &transferred, 1000);
         if (err) {
             fprintf(stderr, "ch347: libusb: failed to send packet: %d\n", err);
@@ -78,7 +78,7 @@ int ch347_spi_read_packet(struct ch347_priv *priv, uint8_t cmd, void *rx, int le
     rx_received = cur_len;
     while (rx_received < rxlen) {
         /* The leftover data length is known so we don't need to deal with packet overflow using tmpbuf. */
-        err = libusb_bulk_transfer(priv->handle, CH347_EPIN, rx + rx_received, rxlen - rx_received, &transferred, 1000);
+        err = libusb_bulk_transfer(priv->handle, CH347_EPIN, (uint8_t *)rx + rx_received, rxlen - rx_received, &transferred, 1000);
         if (err) {
             fprintf(stderr, "ch347: libusb: failed to receive packet: %d\n", err);
             return err;
@@ -204,7 +204,7 @@ int ch347_spi_trx_full_duplex(struct ch347_priv *priv, void *buf, uint32_t len) 
 int ch347_spi_tx(struct ch347_priv *priv, const void *tx, uint32_t len) {
     int err, transferred;
     uint8_t unknown_data;
-    const void *ptr = tx;
+    const uint8_t *ptr = tx;
     while (len) {
         int cur_len = len > CH347_SPI_MAX_TRX ? CH347_SPI_MAX_TRX : len;
         err = ch347_spi_write_packet(priv, CH347_CMD_SPI_BLCK_WR, ptr, cur_len);
@@ -221,7 +221,7 @@ int ch347_spi_tx(struct ch347_priv *priv, const void *tx, uint32_t len) {
 
 int ch347_spi_rx(struct ch347_priv *priv, void *rx, uint32_t len) {
     int err, transferred;
-    void *ptr = rx;
+    uint8_t *ptr = rx;
     uint32_t rxlen = 0;
     /* FIXME: len should be little endian! */
     err = ch347_spi_write_packet(priv, CH347_CMD_SPI_BLCK_RD, &len, sizeof(len));

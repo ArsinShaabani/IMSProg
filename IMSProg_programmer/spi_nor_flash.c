@@ -73,8 +73,8 @@
 #define SR_EPE				0x20	/* Erase/Program error */
 #define SR_SRWD				0x80	/* SR write protect */
 
-#define snor_dbg(args...)
-/* #define snor_dbg(args...) do { if (1) printf(args); } while(0) */
+#define snor_dbg(...)
+/* #define snor_dbg(...) do { if (1) printf(__VA_ARGS__); } while(0) */
 
 
 struct {

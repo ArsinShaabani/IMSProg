@@ -18,6 +18,14 @@
 #include <QDialog>
 #include <QMessageBox>
 #include "hexutility.h"
+#ifdef _WIN32
+/* System headers must be included outside of the extern "C" block below;
+   skip winsock2 if any winsock header was already included */
+#ifndef _WINSOCKAPI_
+#include <winsock2.h>
+#endif
+#include <windows.h>
+#endif
 extern "C" {
 #include "ch341a_spi.h"
 #include "ch347.h"

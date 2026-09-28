@@ -38,6 +38,14 @@
 #include "searchdialog.h"
 #include "hexutility.h"
 #include "ft232all.h"
+#ifdef _WIN32
+/* System headers must be included outside of the extern "C" block below;
+   skip winsock2 if any winsock header was already included */
+#ifndef _WINSOCKAPI_
+#include <winsock2.h>
+#endif
+#include <windows.h>
+#endif
 extern "C" {
 #include "bitbang_microwire.h"
 #include "ch341a_gpio.h"

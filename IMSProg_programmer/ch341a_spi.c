@@ -23,6 +23,7 @@
  */
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "ch341a_spi.h"
 #include <libusb.h>
 #include <stdbool.h>
@@ -339,8 +340,15 @@ int ch341a_spi_send_command(unsigned int writecnt, unsigned int readcnt, const u
 	const size_t packets = (writecnt + readcnt + CH341_PACKET_LENGTH - 2) / (CH341_PACKET_LENGTH - 1);
 
 	/* We pluck CS/timeout handling into the first packet thus we need to allocate one extra package. */
-	uint8_t wbuf[packets+1][CH341_PACKET_LENGTH];
-	uint8_t rbuf[writecnt + readcnt];
+	/* MSVC has no VLA support: allocate on the heap instead */
+	uint8_t (*wbuf)[CH341_PACKET_LENGTH] =
+		(uint8_t (*)[CH341_PACKET_LENGTH])calloc(packets + 1, CH341_PACKET_LENGTH);
+	uint8_t *rbuf = (uint8_t *)malloc(writecnt + readcnt);
+	if (wbuf == NULL || rbuf == NULL) {
+		free(wbuf);
+		free(rbuf);
+		return -1;
+	}
 	/* Initialize the write buffer to zero to prevent writing random stack contents to device. */
 	memset(wbuf[0], 0, CH341_PACKET_LENGTH);
 
@@ -368,14 +376,19 @@ int ch341a_spi_send_command(unsigned int writecnt, unsigned int readcnt, const u
 	ret = usb_transfer(__func__, CH341_PACKET_LENGTH + packets + writecnt + readcnt,
 				    writecnt + readcnt, wbuf[0], rbuf);
 
-	if (ret < 0)
+	if (ret < 0) {
+		free(wbuf);
+		free(rbuf);
 		return -1;
+	}
 
 	unsigned int i;
 	for (i = 0; i < readcnt; i++) {
 		*readarr++ = swap_byte(rbuf[writecnt + i]);
 	}
 
+	free(wbuf);
+	free(rbuf);
 	return 0;
 }
 

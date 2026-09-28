@@ -10,16 +10,18 @@
 #ifndef CH347_H
 #define CH347_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <stdbool.h>
+#if defined(_WIN32)
+    /* winsock2.h must come before libusb.h, which includes windows.h;
+       skip it if any winsock header was already included */
+    #ifndef _WINSOCKAPI_
+    #include <winsock2.h>
+    #endif
+    #include <windows.h>
+#endif
 #include <libusb.h>
 #if defined(_WIN32)
-    #include <winsock2.h>
-    #include <windows.h>
     #define htobe16(x) htons(x)
     #define be16toh(x) ntohs(x)
     #define htobe32(x) htonl(x)
@@ -32,6 +34,10 @@ extern "C" {
     #include <machine/endian.h>
 #else
     #include <endian.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #define CH347_SPI_VID 0x1a86
