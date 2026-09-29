@@ -22,7 +22,12 @@
 
 static QString setUpTranslation(const QStringList &searchPaths)
 {
-    QString localeName = QLocale::system().name();
+    #ifdef IMSPROG_FORCE_FA_IR
+        // Force the Persian (fa_IR) interface language regardless of the system locale
+        QString localeName = QStringLiteral("fa_IR");
+    #else
+        QString localeName = QLocale::system().name();
+    #endif
     QString translateName = "chipProgrammer_" + localeName;
 
     // skip user-specific dir for translations (first one); try the rest
@@ -88,7 +93,13 @@ int main(int argc, char *argv[])
         QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs); 
     #endif
     qDebug() << "Used Qt version:" << QT_VERSION_STR;
+#ifdef IMSPROG_FORCE_FA_IR
+    QLocale::setDefault(QLocale(QLocale::Persian, QLocale::Iran));
+#endif
     QApplication a(argc, argv);
+#ifdef IMSPROG_FORCE_FA_IR
+    a.setLayoutDirection(Qt::RightToLeft);
+#endif
     initPaths();
 
     MainWindow w;

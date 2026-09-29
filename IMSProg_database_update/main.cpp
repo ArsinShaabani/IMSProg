@@ -19,11 +19,17 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QTranslator>
+#include <QLocale>
 #include "mainwindow.h"
 
 static QString setUpTranslation(const QStringList &searchPaths)
 {
-    QString localeName = QLocale::system().name();
+    #ifdef IMSPROG_FORCE_FA_IR
+        // Force the Persian (fa_IR) interface language regardless of the system locale
+        QString localeName = QStringLiteral("fa_IR");
+    #else
+        QString localeName = QLocale::system().name();
+    #endif
     //QString translateName = "chipProgrammer_" + localeName;
     QString translateName = "chipUpdater_" + localeName;
 
@@ -73,7 +79,13 @@ int main(int argc, char *argv[])
     qDebug() << "Build version:" << QSslSocket::sslLibraryBuildVersionString();
     qDebug() << "Runtime version:" << QSslSocket::sslLibraryVersionString();
 
+#ifdef IMSPROG_FORCE_FA_IR
+    QLocale::setDefault(QLocale(QLocale::Persian, QLocale::Iran));
+#endif
     QApplication a(argc, argv);
+#ifdef IMSPROG_FORCE_FA_IR
+    a.setLayoutDirection(Qt::RightToLeft);
+#endif
     QCoreApplication::setApplicationName("imsprog");
     QFont font("Monospace");
     font.setStyleHint(QFont::TypeWriter);

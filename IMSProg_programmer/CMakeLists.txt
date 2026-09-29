@@ -263,6 +263,12 @@ add_executable(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/qhexedit2/src/")
 
+# Build option: force the Persian (fa_IR) interface language
+option(IMSPROG_FORCE_FA_IR "Force Persian (fa_IR) interface language" OFF)
+if(IMSPROG_FORCE_FA_IR)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE IMSPROG_FORCE_FA_IR)
+endif()
+
 if (QT_VERSION_MAJOR EQUAL 5)
     target_link_libraries(${PROJECT_NAME}
         Qt5::Core
